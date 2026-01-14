@@ -25,9 +25,23 @@
     <Folder Include="Application\Repositories\" />
     <Folder Include="Application\Services\" />
     <Folder Include="Domain\Enum\" />
-    <Folder Include="Infrastructure\Configurations\" />
     <Folder Include="Infrastructure\Repositories\" />
     <Folder Include="Presentation\Controllers\" />
+  </ItemGroup>
+
+<ItemGroup>
+    <None Update="Infrastructure\Data\Specialties.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Infrastructure\Data\Medicaments.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Infrastructure\Resources\Medicaments.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Infrastructure\Resources\Specialties.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
