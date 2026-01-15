@@ -2,6 +2,7 @@ using Serilog;
 using Microsoft.EntityFrameworkCore;
 using KingdomHospital.Infrastructure;
 using System.Text.Json.Serialization;
+using KingdomHospital.Application.Mappers;
 // using KingdomHospital.Application.Repositories; 
 // using KingdomHospital.Infrastructure.Repositories;
 using Scalar.AspNetCore;
@@ -22,8 +23,11 @@ builder.Services.AddControllers()
 builder.Services.AddOpenApi();
 
 //Ajouter les Mappers au DI
-//builder.Services.AddSingleton<KingdomHospital.Application.Mappers.WeatherMapper>();
-
+builder.Services.AddSingleton<DoctorMapper>(); // Déjà fait
+builder.Services.AddSingleton<PatientMapper>();
+builder.Services.AddSingleton<ConsultationMapper>();
+builder.Services.AddSingleton<MedicamentMapper>();
+builder.Services.AddSingleton<PrescriptionMapper>();
 //Ajouter les service au DI
 //builder.Services.AddScoped<KingdomHospital.Application.Services.WeatherService>();
 

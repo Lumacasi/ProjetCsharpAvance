@@ -1,4 +1,6 @@
-﻿using KingdomHospital.Domain.Entities;
+﻿using KingdomHospital.Application.DTOs;
+using KingdomHospital.Application.Mappers;
+using KingdomHospital.Domain.Entities;
 using KingdomHospital.Infrastructure;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,48 +12,77 @@ namespace KingdomHospital.Controllers
     public class DoctorsController : ControllerBase
     {
         private readonly KingdomHospitalContext _context;
+        private readonly DoctorMapper _mapper; // <-- On injecte le mapper
 
-        public DoctorsController(KingdomHospitalContext context)
+        public DoctorsController(KingdomHospitalContext context, DoctorMapper mapper)
         {
             _context = context;
-        }
-        
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Doctor>>> GetDoctors()
-        {
-            return await _context.Doctors
-                .Include(d => d.Specialty)
-                .ToListAsync();
+            _mapper = mapper;
         }
 
+        // GET: api/doctors
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<DoctorDto>>> GetDoctors()
+        {
+            var doctors = await _context.Doctors
+                                 .Include(d => d.Specialty) // Toujours besoin de l'include pour le mapping !
+                                 .ToListAsync();
+            
+            // On convertit la liste d'entités en liste de DTOs
+            // .Select(d => _mapper.ToDto(d)) transforme chaque médecin
+            return Ok(doctors.Select(d => _mapper.ToDto(d)));
+        }
+
+        // GET: api/doctors/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Doctor>> GetDoctor(int id)
+        public async Task<ActionResult<DoctorDto>> GetDoctor(int id)
         {
             var doctor = await _context.Doctors
-                .Include(d => d.Specialty)
-                .FirstOrDefaultAsync(d => d.Id == id);
+                                       .Include(d => d.Specialty)
+                                       .FirstOrDefaultAsync(d => d.Id == id);
+
             if (doctor == null) return NotFound();
-            return doctor;
+
+            // On renvoie le DTO propre
+            return Ok(_mapper.ToDto(doctor));
         }
-        
+
+        // POST: api/doctors
+        // On reçoit un CreateDoctorDto, pas un Doctor !
         [HttpPost]
-        public async Task<ActionResult<Doctor>> CreateDoctor(Doctor doctor)
+        public async Task<ActionResult<DoctorDto>> CreateDoctor(CreateDoctorDto doctorDto)
         {
-            var specialtyExists = await _context.Specialties.AnyAsync(s => s.Id == doctor.SpecialtyId);
-            if (!specialtyExists) return BadRequest("Specialty does not exist");
-            
+            // Validation manuelle de la FK (bonne pratique)
+            if (!await _context.Specialties.AnyAsync(s => s.Id == doctorDto.SpecialtyId))
+            {
+                return BadRequest("SpecialtyId invalide.");
+            }
+
+            // 1. DTO -> Entité
+            var doctor = _mapper.ToEntity(doctorDto);
+
+            // 2. Sauvegarde
             _context.Doctors.Add(doctor);
             await _context.SaveChangesAsync();
-            
-            return CreatedAtAction(nameof(GetDoctor), new {id = doctor.Id}, doctor);
+
+            // 3. On doit recharger la spécialité pour renvoyer un joli DTO complet
+            await _context.Entry(doctor).Reference(d => d.Specialty).LoadAsync();
+
+            // 4. Entité -> DTO pour la réponse
+            var responseDto = _mapper.ToDto(doctor);
+
+            return CreatedAtAction(nameof(GetDoctor), new { id = doctor.Id }, responseDto);
         }
 
+        // PUT: api/doctors/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateDoctor(int id, Doctor doctor)
+        public async Task<IActionResult> UpdateDoctor(int id, CreateDoctorDto doctorDto)
         {
-            if (id != doctor.Id) return BadRequest("Id doesn't match request");
+            var doctor = await _context.Doctors.FindAsync(id);
+            if (doctor == null) return NotFound();
 
-            _context.Entry(doctor).State = EntityState.Modified;
+            // Le mapper met à jour l'entité existante avec les nouvelles valeurs
+            _mapper.UpdateEntity(doctorDto, doctor);
 
             try
             {
@@ -59,70 +90,10 @@ namespace KingdomHospital.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!_context.Doctors.Any(d => d.Id == id)) return NotFound();
-                else throw;
+               throw;
             }
-            
+
             return NoContent();
-        }
-        
-        [HttpGet("{id}/specialty")]
-        public async Task<ActionResult<Specialty>> GetDoctorSpecialty(int id)
-        {
-            var doctor = await _context.Doctors
-                .Include(d => d.Specialty)
-                .FirstOrDefaultAsync(d => d.Id == id);
-
-            if (doctor == null) return NotFound();
-            return Ok(doctor.Specialty);
-        }
-        
-        [HttpPut("{id}/specialty/{specialtyId}")]
-        public async Task<IActionResult> UpdateDoctorSpecialty(int id, int specialtyId)
-        {
-            var doctor = await _context.Doctors.FindAsync(id);
-            if (doctor == null) return NotFound("Médecin introuvable");
-
-            var specialtyExists = await _context.Specialties.AnyAsync(s => s.Id == specialtyId);
-            if (!specialtyExists) return BadRequest("Spécialité introuvable");
-
-            doctor.SpecialtyId = specialtyId;
-            await _context.SaveChangesAsync();
-            return NoContent();
-        }
-
-        [HttpGet("{id}/consultations")]
-        public async Task<ActionResult<IEnumerable<Consultation>>> GetDoctorConsultations(int id, [FromQuery] DateOnly? from, [FromQuery] DateOnly? to)
-        {
-            var query = _context.Consultations.Where(c => c.DoctorId == id);
-
-            if (from.HasValue) query = query.Where(c => c.Date >= from.Value);
-            if (to.HasValue) query = query.Where(c => c.Date <= to.Value);
-
-            return await query.ToListAsync();
-        }
-
-        [HttpGet("{id}/patients")]
-        public async Task<ActionResult<IEnumerable<Patient>>> GetDoctorPatients(int id)
-        {
-            var patients = await _context.Consultations
-                .Where(c => c.DoctorId == id)
-                .Select(c => c.Patient)
-                .Distinct()
-                .ToListAsync();
-
-            return Ok(patients);
-        }
-
-        [HttpGet("{id}/ordonnances")]
-        public async Task<ActionResult<IEnumerable<Prescription>>> GetDoctorPrescriptions(int id, [FromQuery] DateOnly? from, [FromQuery] DateOnly? to)
-        {
-            var query = _context.Prescriptions.Where(p => p.DoctorId == id);
-
-            if (from.HasValue) query = query.Where(p => p.Date >= from.Value);
-            if (to.HasValue) query = query.Where(p => p.Date <= to.Value);
-
-            return await query.ToListAsync();
         }
     }
 }
