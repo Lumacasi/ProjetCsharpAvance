@@ -10,5 +10,6 @@ namespace KingdomHospital.Application.Repositories
         Task UpdateAsync(Consultation consultation);
         Task DeleteAsync(Consultation consultation);
         Task<bool> ExistsAsync(int id);
+        Task<bool> IsDoctorBusyAsync(int doctorId, DateOnly date, TimeOnly hour);
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace KingdomHospital.Domain.Entities
 {
@@ -25,24 +26,16 @@ namespace KingdomHospital.Domain.Entities
     public class PrescriptionLine
     {
         public int Id { get; set; }
-
         public int PrescriptionId { get; set; }
-
         public int MedicamentId { get; set; }
-        public virtual Medicament? Medicament { get; set; }
-
-        [MaxLength(50)]
-        public required string Dosage { get; set; }
-
-        [MaxLength(50)]
-        public required string Frequency { get; set; }
-
-        [MaxLength(30)]
-        public required string Duration { get; set; }
-
+        public string Dosage { get; set; } = string.Empty;
+        public string Frequency { get; set; } = string.Empty;
+        public string Duration { get; set; } = string.Empty;
         public int Quantity { get; set; }
-
-        [MaxLength(255)]
         public string? Instructions { get; set; }
+
+        [JsonIgnore]
+        public Prescription? Prescription { get; set; }
+        public Medicament? Medicament { get; set; }
     }
 }

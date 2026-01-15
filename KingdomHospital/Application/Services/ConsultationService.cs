@@ -36,9 +36,16 @@ namespace KingdomHospital.Application.Services
         public async Task<ConsultationDto?> CreateConsultationAsync(CreateConsultationDto dto)
         {
             var doctor = await _doctorRepo.GetByIdAsync(dto.DoctorId);
-            var patientExists = await _patientRepo.ExistsAsync(dto.PatientId);
+            if (doctor == null) return null; 
 
-            if (doctor == null || !patientExists) return null;
+            var patientExists = await _patientRepo.ExistsAsync(dto.PatientId);
+            if (!patientExists) return null;
+
+            bool isBusy = await _repository.IsDoctorBusyAsync(dto.DoctorId, dto.Date, dto.Hour);
+            if (isBusy) 
+            {
+                return null;
+            }
 
             var consultation = _mapper.ToEntity(dto);
             await _repository.AddAsync(consultation);

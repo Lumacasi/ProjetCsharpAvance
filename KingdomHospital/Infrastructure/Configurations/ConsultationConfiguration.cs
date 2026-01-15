@@ -1,0 +1,29 @@
+﻿using KingdomHospital.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+namespace KingdomHospital.Infrastructure.Configurations
+{
+    public class ConsultationConfiguration : IEntityTypeConfiguration<Consultation>
+    {
+        public void Configure(EntityTypeBuilder<Consultation> builder)
+        {
+            builder.HasKey(c => c.Id);
+
+            builder.Property(c => c.Reason)
+                .HasMaxLength(100);
+
+            builder.HasIndex(c => new { c.DoctorId, c.Date, c.Hour }).IsUnique();
+            
+            builder.HasOne(c => c.Doctor)
+                .WithMany(d => d.Consultations)
+                .HasForeignKey(c => c.DoctorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasOne(c => c.Patient)
+                .WithMany(p => p.Consultations)
+                .HasForeignKey(c => c.PatientId)
+                .OnDelete(DeleteBehavior.Restrict);
+        }
+    }
+}

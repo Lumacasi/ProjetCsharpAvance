@@ -58,5 +58,11 @@ namespace KingdomHospital.Infrastructure.Repositories
         {
             return await _context.Consultations.AnyAsync(c => c.Id == id);
         }
+
+        public async Task<bool> IsDoctorBusyAsync(int doctorId, DateOnly date, TimeOnly hour)
+        {
+            return await _context.Consultations
+                .AnyAsync(c => c.DoctorId == doctorId && c.Date == date && c.Hour == hour);
+        }
     }
 }

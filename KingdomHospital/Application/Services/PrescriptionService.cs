@@ -36,16 +36,36 @@ namespace KingdomHospital.Application.Services
             return prescription == null ? null : _mapper.ToDto(prescription);
         }
 
-        public async Task<PrescriptionDto?> CreatePrescriptionAsync(CreatePrescriptionDto dto)
+public async Task<PrescriptionDto?> CreatePrescriptionAsync(CreatePrescriptionDto dto)
         {
             var doctor = await _doctorRepo.GetByIdAsync(dto.DoctorId);
             var patient = await _patientRepo.GetByIdAsync(dto.PatientId);
 
             if (doctor == null || patient == null) return null;
 
+            if (dto.Lines == null || !dto.Lines.Any())
+            {
+                return null; 
+            }
+
+            if (dto.ConsultationId.HasValue)
+            {
+                var consult = await _consultationRepo.GetByIdAsync(dto.ConsultationId.Value);
+                
+                if (consult == null) return null; 
+
+                if (consult.PatientId != dto.PatientId) return null;
+
+                if (consult.DoctorId != dto.DoctorId) return null;
+
+                if (dto.Date < consult.Date) return null;
+            }
+
             var prescription = _mapper.ToEntity(dto);
             
-            if (dto.Lines != null)
+            if (prescription.Lines == null) prescription.Lines = new List<PrescriptionLine>();
+            
+            if (!prescription.Lines.Any() && dto.Lines != null)
             {
                 foreach (var lineDto in dto.Lines)
                 {

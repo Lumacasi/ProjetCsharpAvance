@@ -58,10 +58,18 @@ var app = builder.Build();
 // Seed data
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<KingdomHospitalContext>();
-    // On s'assure que la DB est créée avant de seed
-    db.Database.EnsureCreated(); 
-    SeedData.Initialize(db);
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<KingdomHospitalContext>();
+        context.Database.Migrate();
+        SeedData.Initialize(services);
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Une erreur est survenue lors du seed de la DB.");
+    }
 }
 
 app.UseSerilogRequestLogging();
