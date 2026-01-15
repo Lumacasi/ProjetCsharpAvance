@@ -1,6 +1,157 @@
-@KingdomHospital_HostAddress = http://localhost:5039
+@Host = http://localhost:5039
 
-GET {{KingdomHospital_HostAddress}}/weatherforecast/
-Accept: application/json
+# ==========================================
+# SCÉNARIO 1 : GESTION SIMPLE (MÉDECIN)
+# Objectif : Montrer le CRUD de base + Validation
+# ==========================================
 
-###
+### 1.1 Créer un nouveau médecin (Dr. Strange)
+# On l'ajoute à la spécialité 2 (Dermato) déjà existante
+POST {{Host}}/api/doctors
+Content-Type: application/json
+
+{
+  "firstName": "Stephen",
+  "lastName": "Strange",
+  "specialtyId": 2
+}
+
+### 1.2 VÉRIFICATION (Avant modif)
+# On vérifie qu'il est bien créé avec l'ID 3 (supposé)
+GET {{Host}}/api/doctors/3
+
+### 1.3 MODIFICATION (PUT)
+# Il change de spécialité pour la 1 (Cardio) et change de prénom
+PUT {{Host}}/api/doctors/3
+Content-Type: application/json
+
+{
+  "firstName": "Steve",
+  "lastName": "Strange",
+  "specialtyId": 1
+}
+
+### 1.4 VÉRIFICATION (Après modif)
+# On constate le changement
+GET {{Host}}/api/doctors/3
+
+
+# ==========================================
+# SCÉNARIO 2 : RELATIONNEL CONSULTATION
+# Objectif : Montrer l'impact sur la liste du Médecin
+# ==========================================
+
+### 2.1 ÉTAT INITIAL
+# On regarde les consultations du Dr House (ID 1). Liste vide ou existante.
+GET {{Host}}/api/doctors/1/consultations
+
+### 2.2 AJOUT (POST)
+# On ajoute une consultation pour Dr House avec le patient 1
+POST {{Host}}/api/consultations
+Content-Type: application/json
+
+{
+  "date": "2026-06-01",
+  "hour": "14:00:00",
+  "reason": "Douleur jambe droite",
+  "doctorId": 1,
+  "patientId": 1
+}
+
+### 2.3 VÉRIFICATION (Après Ajout)
+# La consultation doit apparaître dans la liste du médecin !
+GET {{Host}}/api/doctors/1/consultations
+
+### 2.4 MODIFICATION (PUT)
+# On change la raison de la consultation (ID 1)
+PUT {{Host}}/api/consultations/1
+Content-Type: application/json
+
+{
+  "date": "2026-06-01",
+  "hour": "14:00:00",
+  "reason": "Lupus suspecté",
+  "doctorId": 1,
+  "patientId": 1
+}
+
+### 2.5 SUPPRESSION (DELETE)
+# Finalement, on annule la consultation
+DELETE {{Host}}/api/consultations/1
+
+### 2.6 VÉRIFICATION (Après Suppression)
+# La liste du médecin doit être revenue à l'état initial
+GET {{Host}}/api/doctors/1/consultations
+
+
+# ==========================================
+# SCÉNARIO 3 : RELATIONNEL ORDONNANCE & LIGNES
+# Objectif : Montrer la complexité (Lignes imbriquées)
+# ==========================================
+
+### 3.1 ÉTAT INITIAL
+# On regarde les ordonnances du Patient 2 (Jane)
+GET {{Host}}/api/patients/2/ordonnances
+
+### 3.2 CRÉATION COMPLEXE (POST)
+# Création d'une ordonnance avec 2 lignes de médicaments
+POST {{Host}}/api/ordonnances
+Content-Type: application/json
+
+{
+  "date": "2026-06-02",
+  "notes": "Traitement de choc",
+  "doctorId": 2,
+  "patientId": 2,
+  "lines": [
+    {
+      "medicamentId": 1,
+      "dosage": "1g",
+      "frequency": "Matin",
+      "duration": "5j",
+      "quantity": 10
+    },
+    {
+      "medicamentId": 2,
+      "dosage": "1 sachet",
+      "frequency": "Soir",
+      "duration": "3j",
+      "quantity": 5
+    }
+  ]
+}
+
+### 3.3 VÉRIFICATION RELATIONNELLE (Coté Patient)
+# L'ordonnance (ID 1) doit apparaître
+GET {{Host}}/api/patients/2/ordonnances
+
+### 3.4 VÉRIFICATION RELATIONNELLE (Coté Médicament)
+# On vérifie qui consomme du Doliprane (Medicament 1) -> Doit montrer l'ordonnance créée
+GET {{Host}}/api/medicaments/1/ordonnances
+
+### 3.5 MODIFICATION D'UNE LIGNE (PUT)
+# On modifie la quantité de la première ligne (ID 1) de l'ordonnance 1
+# On passe la quantité à 50 (au lieu de 10)
+PUT {{Host}}/api/ordonnances/1/lignes/1
+Content-Type: application/json
+
+{
+  "medicamentId": 1,
+  "dosage": "1g",
+  "frequency": "Matin",
+  "duration": "5j",
+  "quantity": 50,
+  "instructions": "ATTENTION SURDOSAGE"
+}
+
+### 3.6 VÉRIFICATION (Après Modif Ligne)
+# On recharge l'ordonnance pour voir si la ligne a changé
+GET {{Host}}/api/ordonnances/1
+
+### 3.7 SUPPRESSION (DELETE)
+# On supprime l'ordonnance complète
+DELETE {{Host}}/api/ordonnances/1
+
+### 3.8 VÉRIFICATION FINALE
+# Le patient n'a plus d'ordonnance
+GET {{Host}}/api/patients/2/ordonnances
