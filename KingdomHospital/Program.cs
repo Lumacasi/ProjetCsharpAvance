@@ -1,6 +1,7 @@
 using Serilog;
 using Microsoft.EntityFrameworkCore;
 using KingdomHospital.Infrastructure;
+using System.Text.Json.Serialization;
 // using KingdomHospital.Application.Repositories; 
 // using KingdomHospital.Infrastructure.Repositories;
 using Scalar.AspNetCore;
@@ -11,7 +12,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSerilog((services, lc) =>
     lc.ReadFrom.Configuration(builder.Configuration));
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Indispensable : Remplace les références cycliques par "null" au lieu de crasher
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+    });
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
