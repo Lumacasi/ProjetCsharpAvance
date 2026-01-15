@@ -1,9 +1,7 @@
 ﻿using KingdomHospital.Application.DTOs;
-using KingdomHospital.Application.Mappers;
+using KingdomHospital.Application.Services;
 using KingdomHospital.Domain.Entities;
-using KingdomHospital.Infrastructure;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace KingdomHospital.Controllers
 {
@@ -11,58 +9,60 @@ namespace KingdomHospital.Controllers
     [Route("api/[controller]")]
     public class PatientsController : ControllerBase
     {
-        private readonly KingdomHospitalContext _context;
-        private readonly PatientMapper _mapper;
+        private readonly PatientService _service;
 
-        public PatientsController(KingdomHospitalContext context, PatientMapper mapper)
+        public PatientsController(PatientService service)
         {
-            _context = context;
-            _mapper = mapper;
+            _service = service;
         }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<PatientDto>>> GetPatients()
         {
-            var patients = await _context.Patients.ToListAsync();
-            return Ok(patients.Select(p => _mapper.ToDto(p)));
+            return Ok(await _service.GetAllPatientsAsync());
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<PatientDto>> GetPatient(int id)
         {
-            var patient = await _context.Patients.FindAsync(id);
+            var patient = await _service.GetPatientByIdAsync(id);
             if (patient == null) return NotFound();
-            return Ok(_mapper.ToDto(patient));
+            return Ok(patient);
         }
 
         [HttpPost]
         public async Task<ActionResult<PatientDto>> CreatePatient(CreatePatientDto dto)
         {
-            var patient = _mapper.ToEntity(dto);
-            _context.Patients.Add(patient);
-            await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetPatient), new { id = patient.Id }, _mapper.ToDto(patient));
+            var created = await _service.CreatePatientAsync(dto);
+            return CreatedAtAction(nameof(GetPatient), new { id = created.Id }, created);
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdatePatient(int id, CreatePatientDto dto)
         {
-            var patient = await _context.Patients.FindAsync(id);
-            if (patient == null) return NotFound();
-
-            _mapper.UpdateEntity(dto, patient);
-            await _context.SaveChangesAsync();
+            var success = await _service.UpdatePatientAsync(id, dto);
+            if (!success) return NotFound();
             return NoContent();
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeletePatient(int id)
         {
-            var patient = await _context.Patients.FindAsync(id);
-            if (patient == null) return NotFound();
-            _context.Patients.Remove(patient);
-            await _context.SaveChangesAsync();
+            var success = await _service.DeletePatientAsync(id);
+            if (!success) return NotFound();
             return NoContent();
+        }
+
+        [HttpGet("{id}/consultations")]
+        public async Task<ActionResult<IEnumerable<Consultation>>> GetConsultations(int id)
+        {
+            return Ok(await _service.GetConsultationsAsync(id));
+        }
+
+        [HttpGet("{id}/ordonnances")]
+        public async Task<ActionResult<IEnumerable<Prescription>>> GetPrescriptions(int id)
+        {
+            return Ok(await _service.GetPrescriptionsAsync(id));
         }
     }
 }

@@ -3,8 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using KingdomHospital.Infrastructure;
 using System.Text.Json.Serialization;
 using KingdomHospital.Application.Mappers;
-// using KingdomHospital.Application.Repositories; 
-// using KingdomHospital.Infrastructure.Repositories;
+using KingdomHospital.Application.Repositories;
+using KingdomHospital.Application.Services;
+using KingdomHospital.Infrastructure.Repositories;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,27 +20,38 @@ builder.Services.AddControllers()
         // Indispensable : Remplace les références cycliques par "null" au lieu de crasher
         options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
     });
+
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
 //Ajouter les Mappers au DI
-builder.Services.AddSingleton<DoctorMapper>(); // Déjà fait
+builder.Services.AddSingleton<DoctorMapper>();
 builder.Services.AddSingleton<PatientMapper>();
 builder.Services.AddSingleton<ConsultationMapper>();
 builder.Services.AddSingleton<MedicamentMapper>();
 builder.Services.AddSingleton<PrescriptionMapper>();
+builder.Services.AddSingleton<SpecialtyMapper>();
+
 //Ajouter les service au DI
-//builder.Services.AddScoped<KingdomHospital.Application.Services.WeatherService>();
+builder.Services.AddScoped<DoctorService>();
+builder.Services.AddScoped<PatientService>();
+builder.Services.AddScoped<ConsultationService>();
+builder.Services.AddScoped<PrescriptionService>();
+builder.Services.AddScoped<MedicamentService>();
+builder.Services.AddScoped<SpecialtyService>();
 
 //Ajouter les repositories au DI
-// Note : J'ai remis "DefaultConnection" ici car c'est souvent le nom par défaut dans appsettings.json.
-// Si tu veux utiliser "HospitalConnection", il faut changer le fichier json (voir étape 2).
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddScoped<IDoctorRepository, DoctorRepository>();
+builder.Services.AddScoped<IPatientRepository, PatientRepository>();
+builder.Services.AddScoped<IConsultationRepository, ConsultationRepository>();
+builder.Services.AddScoped<IPrescriptionRepository, PrescriptionRepository>();
+builder.Services.AddScoped<IMedicamentRepository, MedicamentRepository>();
+builder.Services.AddScoped<ISpecialtyRepository, SpecialtyRepository>();
 
 builder.Services.AddDbContext<KingdomHospitalContext>(options =>
     options.UseSqlServer(connectionString));
 
-//builder.Services.AddScoped<IWeatherForecastRepository, WeatherForecastRepository>();
 
 var app = builder.Build();
 

@@ -1,9 +1,6 @@
 ﻿using KingdomHospital.Application.DTOs;
-using KingdomHospital.Application.Mappers;
-using KingdomHospital.Domain.Entities;
-using KingdomHospital.Infrastructure;
+using KingdomHospital.Application.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace KingdomHospital.Controllers
 {
@@ -11,76 +8,53 @@ namespace KingdomHospital.Controllers
     [Route("api/[controller]")]
     public class ConsultationsController : ControllerBase
     {
-        private readonly KingdomHospitalContext _context;
-        private readonly ConsultationMapper _mapper;
+        private readonly ConsultationService _service;
 
-        public ConsultationsController(KingdomHospitalContext context, ConsultationMapper mapper)
+        public ConsultationsController(ConsultationService service)
         {
-            _context = context;
-            _mapper = mapper;
+            _service = service;
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<ConsultationDto>>> GetConsultations()
+        public async Task<ActionResult<IEnumerable<ConsultationDto>>> GetConsultations(
+            [FromQuery] int? doctorId,
+            [FromQuery] int? patientId,
+            [FromQuery] DateOnly? from,
+            [FromQuery] DateOnly? to)
         {
-            var consultations = await _context.Consultations
-                .Include(c => c.Doctor)  
-                .Include(c => c.Patient)
-                .ToListAsync();
-
-            return Ok(consultations.Select(c => _mapper.ToDto(c)));
+            return Ok(await _service.GetAllConsultationsAsync(doctorId, patientId, from, to));
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<ConsultationDto>> GetConsultation(int id)
         {
-            var consultation = await _context.Consultations
-                .Include(c => c.Doctor)
-                .Include(c => c.Patient)
-                .FirstOrDefaultAsync(c => c.Id == id);
-
+            var consultation = await _service.GetConsultationByIdAsync(id);
             if (consultation == null) return NotFound();
-            return Ok(_mapper.ToDto(consultation));
+            return Ok(consultation);
         }
 
         [HttpPost]
         public async Task<ActionResult<ConsultationDto>> CreateConsultation(CreateConsultationDto dto)
         {
-            if (!await _context.Doctors.AnyAsync(d => d.Id == dto.DoctorId) ||
-                !await _context.Patients.AnyAsync(p => p.Id == dto.PatientId))
-            {
-                return BadRequest("Docteur ou Patient inconnu");
-            }
-
-            var consultation = _mapper.ToEntity(dto);
-            _context.Consultations.Add(consultation);
-            await _context.SaveChangesAsync();
-
-            await _context.Entry(consultation).Reference(c => c.Doctor).LoadAsync();
-            await _context.Entry(consultation).Reference(c => c.Patient).LoadAsync();
-
-            return CreatedAtAction(nameof(GetConsultation), new { id = consultation.Id }, _mapper.ToDto(consultation));
+            var created = await _service.CreateConsultationAsync(dto);
+            if (created == null) return BadRequest("Médecin ou Patient introuvable");
+            return CreatedAtAction(nameof(GetConsultation), new { id = created.Id }, created);
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateConsultation(int id, CreateConsultationDto dto)
         {
-            var consultation = await _context.Consultations.FindAsync(id);
-            if (consultation == null) return NotFound();
-
-            _mapper.UpdateEntity(dto, consultation);
-            await _context.SaveChangesAsync();
+            var success = await _service.UpdateConsultationAsync(id, dto);
+            if (!success) return NotFound();
             return NoContent();
         }
-        
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteConsultation(int id)
         {
-             var consultation = await _context.Consultations.FindAsync(id);
-             if (consultation == null) return NotFound();
-             _context.Consultations.Remove(consultation);
-             await _context.SaveChangesAsync();
-             return NoContent();
+            var success = await _service.DeleteConsultationAsync(id);
+            if (!success) return NotFound();
+            return NoContent();
         }
     }
 }

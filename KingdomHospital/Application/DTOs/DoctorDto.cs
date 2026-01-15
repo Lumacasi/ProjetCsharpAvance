@@ -19,7 +19,7 @@ namespace KingdomHospital.Application.DTOs
     public class DoctorDto
     {
         public int Id { get; set; }
-        public string FullName { get; set; } = string.Empty; // Exemple : "Gregory House"
-        public string SpecialtyName { get; set; } = string.Empty; // Juste le nom, pas l'objet entier !
+        public string FullName { get; set; } = string.Empty;
+        public string SpecialtyName { get; set; } = string.Empty;
     }
 }
