@@ -9,13 +9,15 @@ namespace KingdomHospital.Application.Services
     {
         private readonly IMedicamentRepository _repository;
         private readonly MedicamentMapper _mapper;
+        private readonly PrescriptionMapper _prescriptionMapper;
         private readonly IPrescriptionRepository _prescriptionRepo;
 
-        public MedicamentService(IMedicamentRepository repository, MedicamentMapper mapper, IPrescriptionRepository prescriptionRepo)
+        public MedicamentService(IMedicamentRepository repository, MedicamentMapper mapper, IPrescriptionRepository prescriptionRepo, PrescriptionMapper prescriptionMapper)
         {
             _repository = repository;
             _mapper = mapper;
             _prescriptionRepo = prescriptionRepo;
+            _prescriptionMapper = prescriptionMapper;
         }
 
         public async Task<IEnumerable<MedicamentDto>> GetAllMedicamentsAsync()
@@ -39,10 +41,12 @@ namespace KingdomHospital.Application.Services
             return _mapper.ToDto(med);
         }
 
-        public async Task<IEnumerable<Prescription>> GetPrescriptionsByMedicamentAsync(int medicamentId)
+        public async Task<IEnumerable<PrescriptionDto>> GetPrescriptionsByMedicamentAsync(int medicamentId)
         {
-            var allPrescriptions = await _prescriptionRepo.GetAllAsync(null, null, null, null);
-            return allPrescriptions.Where(p => p.Lines.Any(l => l.MedicamentId == medicamentId));
+            
+            var allPrescriptions = await _prescriptionRepo.GetAllByMedicamentId(medicamentId);
+            
+            return allPrescriptions.Select(p => _prescriptionMapper.ToDto(p));
         }
     }
 }

@@ -10,8 +10,9 @@ namespace KingdomHospital.Application.Mappers
         [MapProperty(nameof(Doctor.Specialty.Name), nameof(DoctorDto.SpecialtyName))] 
         public partial DoctorDto ToDto(Doctor doctor);
         
-        private string MapFullName(Doctor doctor) => $"{doctor.FirstName} {doctor.LastName}";
-        [MapProperty(nameof(Doctor), nameof(DoctorDto.FullName), Use = nameof(MapFullName))] 
+        [MapProperty(nameof(Doctor.FirstName), nameof(DoctorDto.FirstName))] 
+        [MapProperty(nameof(Doctor.LastName), nameof(DoctorDto.LastName))] 
+
         private partial DoctorDto DoctorToDtoInternal(Doctor doctor);
 
         [MapperIgnoreTarget(nameof(Doctor.Id))]

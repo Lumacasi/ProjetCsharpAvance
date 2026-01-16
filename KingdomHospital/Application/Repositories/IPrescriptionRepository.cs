@@ -11,6 +11,8 @@ namespace KingdomHospital.Application.Repositories
         Task DeleteAsync(Prescription prescription);
         
         Task<IEnumerable<PrescriptionLine>> GetLinesAsync(int prescriptionId);
+        Task<IEnumerable<Prescription>> GetAllByMedicamentId(int medicamentId);
+
         Task AddLineAsync(PrescriptionLine line);
         Task<PrescriptionLine?> GetLineByIdAsync(int prescriptionId, int lineId);
         Task UpdateLineAsync(PrescriptionLine line);
