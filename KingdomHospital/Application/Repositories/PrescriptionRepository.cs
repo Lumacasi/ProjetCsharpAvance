@@ -23,12 +23,27 @@ namespace KingdomHospital.Infrastructure.Repositories
 
             if (doctorId.HasValue) query = query.Where(p => p.DoctorId == doctorId);
             if (patientId.HasValue) query = query.Where(p => p.PatientId == patientId);
+            
             if (from.HasValue) query = query.Where(p => p.Date >= from.Value);
             if (to.HasValue) query = query.Where(p => p.Date <= to.Value);
 
             return await query.ToListAsync();
         }
 
+        public async Task<IEnumerable<Prescription>> GetAllByMedicamentId(int medicamentId)
+        {
+            var query = _context.Prescriptions
+                .Include(p => p.Doctor)
+                .Include(p => p.Patient)
+                .Include(p => p.Lines).ThenInclude(l => l.Medicament)
+                .Where(p => p.Lines.Any(l => l.MedicamentId == medicamentId))
+                .AsQueryable();
+            return await query.ToListAsync();
+        }
+        
+        
+        //méthode spécifique efficace pour renvoyer les ordonnances par id de médicament !!!!!!!!!!!!!!!!!!!
+        
         public async Task<Prescription?> GetByIdAsync(int id)
         {
             return await _context.Prescriptions

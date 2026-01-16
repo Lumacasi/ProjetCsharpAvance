@@ -64,7 +64,7 @@ GET {{Host}}/api/doctors/1/consultations
 
 ### 2.4 MODIFICATION (PUT)
 # On change la raison de la consultation (ID 1)
-PUT {{Host}}/api/consultations/1
+PUT {{Host}}/api/consultations/2
 Content-Type: application/json
 
 {
@@ -77,7 +77,7 @@ Content-Type: application/json
 
 ### 2.5 SUPPRESSION (DELETE)
 # Finalement, on annule la consultation
-DELETE {{Host}}/api/consultations/1
+DELETE {{Host}}/api/consultations/2
 
 ### 2.6 VÉRIFICATION (Après Suppression)
 # La liste du médecin doit être revenue à l'état initial
@@ -132,7 +132,7 @@ GET {{Host}}/api/medicaments/1/ordonnances
 ### 3.5 MODIFICATION D'UNE LIGNE (PUT)
 # On modifie la quantité de la première ligne (ID 1) de l'ordonnance 1
 # On passe la quantité à 50 (au lieu de 10)
-PUT {{Host}}/api/ordonnances/1/lignes/1
+PUT {{Host}}/api/ordonnances/2/lignes/3
 Content-Type: application/json
 
 {
@@ -146,11 +146,11 @@ Content-Type: application/json
 
 ### 3.6 VÉRIFICATION (Après Modif Ligne)
 # On recharge l'ordonnance pour voir si la ligne a changé
-GET {{Host}}/api/ordonnances/1
+GET {{Host}}/api/ordonnances/2
 
 ### 3.7 SUPPRESSION (DELETE)
 # On supprime l'ordonnance complète
-DELETE {{Host}}/api/ordonnances/1
+DELETE {{Host}}/api/ordonnances/2
 
 ### 3.8 VÉRIFICATION FINALE
 # Le patient n'a plus d'ordonnance
